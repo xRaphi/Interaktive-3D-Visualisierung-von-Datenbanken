@@ -1,31 +1,27 @@
-# 📊 3D Data Visualization on a UGREEN NAS
+📊 3D Data Visualization on a UGREEN NAS
 
 This project demonstrates how to load a large dataset (~10 million rows), analyze it using Python, and generate an interactive 3D visualization served via an Nginx web server running on a UGREEN NAS using Docker.
 
----
+🧰 Prerequisites
 
-## 🧰 Prerequisites
+Hardware
 
-**Hardware**
-- UGREEN NAS with Docker support
+UGREEN NAS with Docker support
 
-**Access**
-- SSH access to the NAS  
-- Docker & Docker Compose installed
+Access
 
-**Dataset**
+SSH access to the NAS
+
+Docker & Docker Compose installed
+
+Dataset
 Example dataset used:
 
 gaming_mental_health_10M_40features.csv (~170 MB)
-
-
----
-
-## 📁 Directory Structure
+📁 Directory Structure
 
 Create a dedicated workspace on the NAS:
 
-```bash
 mkdir -p /volume1/docker/csv3d/work
 mkdir -p /volume1/docker/csv3d/nginx_html
 
@@ -44,7 +40,7 @@ services:
     image: jupyter/datascience-notebook:latest
     container_name: csv3d-jupyter
     ports:
-      - "8890:8888"   # Port changed to avoid conflicts
+      - "8890:8888"
     volumes:
       - ./work:/home/jovyan/work
     environment:
@@ -71,64 +67,48 @@ Open Jupyter in your browser:
 http://<NAS-IP>:8890
 Token: csv3d
 
-Create a Python script:
+Create:
 
 work/make_plot.py
 import pandas as pd
 import plotly.express as px
 
-# Important: file is TAB-separated, not comma-separated
 df = pd.read_csv("datensatz.csv", sep="\t")
 
-# Browsers cannot handle 10M 3D points → sample
 MAX_POINTS = 150_000
 if len(df) > MAX_POINTS:
     df = df.sample(MAX_POINTS, random_state=1)
 
-X = "age"
-Y = "daily_gaming_hours"
-Z = "stress_level"
-COLOR = "anxiety_score"
-
-print(f"Generating plot with {len(df)} rows...")
-
 fig = px.scatter_3d(
     df,
-    x=X,
-    y=Y,
-    z=Z,
-    color=COLOR,
+    x="age",
+    y="daily_gaming_hours",
+    z="stress_level",
+    color="anxiety_score",
     title="Gaming Mental Health Analysis",
     opacity=0.7
 )
 
 fig.write_html("plot3d.html", include_plotlyjs="cdn")
+print("plot3d.html created.")
 
-print("Done → plot3d.html created.")
-
-Run the script:
+Run:
 
 cd work
 python make_plot.py
 🌐 Publish Visualization
-
-Copy the generated HTML file to the Nginx directory:
-
 sudo cp /volume1/docker/csv3d/work/plot3d.html \
         /volume1/docker/csv3d/nginx_html/
 
-Open in browser:
+Open:
 
 http://<NAS-IP>:8085/plot3d.html
-
-You now have a fully interactive 3D visualization.
-
 🛠 Troubleshooting
 Problem	Cause	Fix
-permission denied (Docker)	User lacks Docker socket rights	Run with sudo or add user to docker group
-bind: address already in use	Port conflict	Change host port (e.g. 8890)
-Dataset loads incorrectly	File uses tabs (\t)	Use sep="\t"
-Browser freezes/crashes	Too many points rendered	Reduce sample size
+permission denied (Docker)	Missing Docker rights	Run with sudo
+bind: address already in use	Port conflict	Change host port
+Dataset loads incorrectly	File uses tabs	Use sep="\t"
+Browser freezes/crashes	Too many points	Reduce sample size
 📈 Optional: Correlation Matrix
 import numpy as np
 import seaborn as sns
